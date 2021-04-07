@@ -1,4 +1,4 @@
-﻿name: emotional_films
+name: emotional_films
 channels:
   - pytorch
   - fastai
