@@ -1,4 +1,4 @@
-name: emotional_films
+﻿name: emotional_films
 channels:
   - pytorch
   - fastai
@@ -258,7 +258,7 @@ dependencies:
     - partd==1.1.0
     - prometheus-flask-exporter==0.14.1
     - protobuf==3.12.2
-    - pybluez==0.23
+    - pybluez==0.22
     - pyftdi==0.52.9
     - pypiwin32==223
     - pyserial==3.5
@@ -277,4 +277,4 @@ dependencies:
     - websocket-client==0.57.0
     - werkzeug==1.0.1
     - zict==2.0.0
-prefix: C:\Users\Muzgash\anaconda3\envs\emotional_films
+prefix: C:\Users\MUZGASH\anaconda3\envs\emotional_films
