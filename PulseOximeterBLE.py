@@ -104,7 +104,7 @@ class PulseOximeterBLE:
         else:
             print("Sin información del dispositivo.\n")
 
-    def receive_data(self):
+    def receive_data(self, duration=None):
         """Recoger los datos tomados por el pulsioximetro"""
         service = self.connection[BerryMedPulseOximeterService]
 
@@ -113,6 +113,7 @@ class PulseOximeterBLE:
         spo2_list  = list()
         full_record= list()
 
+        if duration: print(f"Duración: {duration} segundos")
         print("--- Lectura comenzada ---\n")
         
         # Marcadores temporales
@@ -140,6 +141,11 @@ class PulseOximeterBLE:
                     spo2_list.append(SpO2)
                     full_record.append(read_data)
 
+            t = time.perf_counter() - t0
+            if duration and t > duration:
+                print(f"\nTiempo límite alcanzado: {round(t,2)} (máx {duration} seg)")
+                break
+
         print("\n--- Lectura finalizada ---")
 
         # Almacenar datos obtenidos
@@ -158,7 +164,7 @@ class PulseOximeterBLE:
         self.dataframe = df
         return df
 
-    def read(self):
+    def read(self, duration=None):
         """
         1- Lectura de datos del dispositivo
         2- Toma de datos del pulsioximetro
@@ -171,6 +177,6 @@ class PulseOximeterBLE:
 
             # 2- Extracción de datos continua
             try:
-                self.receive_data()
+                self.receive_data(duration=duration)
             except connection_error:
                 connection = disconnect_pulse_oximeter()
