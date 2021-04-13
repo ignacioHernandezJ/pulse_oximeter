@@ -1,5 +1,8 @@
 # Módulo PulseOximeterBLE: Conexión, lectura de datos y almacenamiento.
 # Author: Ignacio Hernández
+# Dependencias del módulo implementado por Adafruit
+# - Instalación:
+# pip install -e git+https://github.com/adafruit/Adafruit_CircuitPython_BLE_BerryMed_Pulse_Oximeter#egg=Adafruit_CircuitPython_BLE_BerryMed_Pulse_Oximeter
 
 import _bleio
 import adafruit_ble
@@ -33,6 +36,14 @@ class PulseOximeterBLE:
             return self.connection.connected
         else:
             return False
+
+    @property
+    def dataframe(self):
+        """Recoger los datos obtenidos en pd.Series a un DataFrame"""
+        df = pd.DataFrame()
+        df['BPM']  = self.BPM_series  if hasattr(self, "BPM_series")  else None
+        df['SpO2'] = self.SpO2_series if hasattr(self, "SpO2_series") else None
+        return df
 
     # --- ESTABLECER LA CONEXIÓN --- #
     def connect_pulse_oximeter(self, target="BerryMed", timeout=15):
@@ -75,7 +86,7 @@ class PulseOximeterBLE:
         """Desconectar pulsioxímetro. Hacerse en caso de fallo de conexión."""
         try:
             self.connection.disconnect()
-        except connection_error:
+        except self.connection_error:
             pass
 
         self.connection = None
@@ -131,10 +142,10 @@ class PulseOximeterBLE:
 
                 if valid_sample:
                     t = time.perf_counter() - t0
-                    t = round(t, 3)
+                    t = round(t,2)
                     timestamps.append(t)
 
-                    if self.verbose: print(f"Pulso: {BPM}, SpO2: {SpO2}")
+                    if self.verbose: print(f"Pulso: {BPM}, SpO2: {SpO2} ({t} seg)")
 
                     # Records
                     pulse_list.append(BPM)
@@ -151,18 +162,8 @@ class PulseOximeterBLE:
         # Almacenar datos obtenidos
         self.BPM_series  = pd.Series(pulse_list, index=timestamps)
         self.SpO2_series = pd.Series(spo2_list,  index=timestamps)
-        self.to_dataframe()
 
         print("=> Dispositivo desconectado")
-
-    def to_dataframe(self):
-        """Recoger los datos obtenidos en pd.Series a un DataFrame"""
-        df = pd.DataFrame()
-        df['BPM']  = self.BPM_series
-        df['SpO2'] = self.SpO2_series
-
-        self.dataframe = df
-        return df
 
     def read(self, duration=None):
         """
@@ -178,5 +179,5 @@ class PulseOximeterBLE:
             # 2- Extracción de datos continua
             try:
                 self.receive_data(duration=duration)
-            except connection_error:
+            except self.connection_error:
                 connection = disconnect_pulse_oximeter()
