@@ -12,8 +12,10 @@ from adafruit_ble.advertising.standard import Advertisement
 from adafruit_ble.services.standard.device_info import DeviceInfoService
 from adafruit_ble_berrymed_pulse_oximeter import BerryMedPulseOximeterService
 
+import os
 import pandas as pd
 import time
+from datetime import datetime
 
 class PulseOximeterBLE:
     """
@@ -181,3 +183,25 @@ class PulseOximeterBLE:
                 self.receive_data(duration=duration)
             except self.connection_error:
                 connection = disconnect_pulse_oximeter()
+
+    def save_csv(self, filename=None, folder='Records/'):
+        """Guardar las mediciones en un fichero csv o txt"""
+
+        if filename == None: # Alternativa unívoca
+            filename = datetime.now().strftime('%Y%m%d_%H%M%S') + '.txt'
+
+        assert filename[-4:] in ['.csv', '.txt'], f"Fichero debe tener extensión .csv o .txt: {filename}"
+        if folder[-1] not in ['\\', '/']: folder += '/'
+
+        # Crear carpeta si no existe
+        if not os.path.isdir(folder):
+            os.mkdir(folder)
+            print(f"Carpeta {folder} creada.")
+
+        # Ruta completa
+        path = folder + filename
+
+        assert not os.path.isfile(path), f"Ya existe el fichero {path}."
+
+        # Guardado
+        self.dataframe.to_csv(path, sep='\t')
