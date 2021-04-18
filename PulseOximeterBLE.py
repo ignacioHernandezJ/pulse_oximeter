@@ -47,6 +47,15 @@ class PulseOximeterBLE:
         df['Pleth']= self.Pleth_series if hasattr(self, "Pleth_series") else None
         return df
 
+    # Actualizar registro de las series temporales
+    # - data: lista o tupla. Contiene, en orden, BPM, SpO2, pleth
+    # - t: int/float. Indica el valor temporal de los datos
+    def update_record(self, data, t):
+        BPM, SpO2, pleth = data
+        self.BPM_series  = self.BPM_series.append(  pd.Series(BPM,  index=[t]) )
+        self.SpO2_series = self.SpO2_series.append( pd.Series(SpO2, index=[t]) )
+        self.Pleth_series= self.Pleth_series.append(pd.Series(pleth,index=[t]) )
+
     # --- ESTABLECER LA CONEXIÓN --- #
     def connect_pulse_oximeter(self, target="BerryMed", timeout=15):
         """
@@ -122,9 +131,9 @@ class PulseOximeterBLE:
         service = self.connection[BerryMedPulseOximeterService]
 
         # Series temporales
-        pulse_list = list()
-        spo2_list  = list()
-        pleth_list = list()
+        self.BPM_series   = pd.Series()
+        self.SpO2_series  = pd.Series()
+        self.Pleth_series = pd.Series()
         full_record= list()
 
         if duration: print(f"Duración: {duration} segundos")
@@ -155,12 +164,12 @@ class PulseOximeterBLE:
 
                     if self.verbose: print(f"Pulso: {BPM}, SpO2: {SpO2}, Pleth: {pleth} ({t} seg)")
 
-                    # Almacenar valor adquirido
-                    pulse_list.append(BPM)
-                    spo2_list.append(SpO2)
-                    pleth_list.append(pleth)
+                    # Almacenar valores adquiridos
+                    self.update_record((BPM, SpO2, pleth), t)
+
                     full_record.append(read_data)
 
+            # Limite de tiempo
             t = time.perf_counter() - t0
             if duration and t > duration:
                 print(f"\nTiempo límite alcanzado: {round(t,2)} (máx {duration} seg)")
@@ -168,10 +177,8 @@ class PulseOximeterBLE:
 
         print("\n--- Lectura finalizada ---")
 
-        # Almacenar secuencia de datos obtenidos
-        self.BPM_series   = pd.Series(pulse_list, index=timestamps)
-        self.SpO2_series  = pd.Series(spo2_list,  index=timestamps)
-        self.Pleth_series = pd.Series(pleth_list, index=timestamps)
+        self.full_record = full_record
+        self.timestamps = timestamps
 
         if not self.connection.connected: print("=> Dispositivo desconectado")
 
