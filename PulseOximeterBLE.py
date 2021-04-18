@@ -141,6 +141,7 @@ class PulseOximeterBLE:
 
                 valid_sample = valid and finger_in and BPM < 255
 
+                # Medición válida
                 if valid_sample:
                     t = time.perf_counter() - t0
                     t = round(t,2)
@@ -168,6 +169,8 @@ class PulseOximeterBLE:
 
         print("=> Dispositivo desconectado")
 
+    # Método global para la lectura de datos
+    # - duration: Tiempo en segundos hasta detener la lectura automáticamente
     def read(self, duration=None):
         """
         1- Lectura de datos del dispositivo
@@ -185,11 +188,13 @@ class PulseOximeterBLE:
             except self.connection_error:
                 connection = disconnect_pulse_oximeter()
 
-    def save_csv(self, filename=None, folder='Records/'):
+    def save_csv(self, filename=None, folder='Records/', prefix=None):
         """Guardar las mediciones en un fichero csv o txt"""
 
         if filename == None: # Alternativa unívoca
             filename = datetime.now().strftime('%Y%m%d_%H%M%S') + '.txt'
+            if prefix:
+                filename = prefix + '_' + filename
 
         assert filename[-4:] in ['.csv', '.txt'], f"Fichero debe tener extensión .csv o .txt: {filename}"
         if folder[-1] not in ['\\', '/']: folder += '/'
