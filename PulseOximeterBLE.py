@@ -34,10 +34,7 @@ class PulseOximeterBLE:
 
     @property
     def connected(self):
-        if self.connection:
-            return self.connection.connected
-        else:
-            return False
+        return self.connection and self.connection.connected
 
     @property
     def dataframe(self):
