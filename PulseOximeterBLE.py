@@ -147,7 +147,7 @@ class PulseOximeterBLE:
                     t = round(t,2)
                     timestamps.append(t)
 
-                    if self.verbose: print(f"Pulso: {BPM}, SpO2: {SpO2} ({t} seg)")
+                    if self.verbose: print(f"Pulso: {BPM}, SpO2: {SpO2}, Pleth: {pleth} ({t} seg)")
 
                     # Almacenar valor adquirido
                     pulse_list.append(BPM)
@@ -190,7 +190,6 @@ class PulseOximeterBLE:
 
     def save_csv(self, filename=None, folder='Records/', prefix=None):
         """Guardar las mediciones en un fichero csv o txt"""
-
         if filename == None: # Alternativa unívoca
             filename = datetime.now().strftime('%Y%m%d_%H%M%S') + '.txt'
             if prefix:
