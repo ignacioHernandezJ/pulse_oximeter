@@ -1,5 +1,5 @@
 # Módulo PulseOximeterBLE: Conexión, lectura de datos y almacenamiento.
-# Author: Ignacio Hernández
+# Author: Ignacio Hernández Jaso
 # Dependencias del módulo implementado por Adafruit
 # - Instalación:
 # pip install -e git+https://github.com/adafruit/Adafruit_CircuitPython_BLE_BerryMed_Pulse_Oximeter#egg=Adafruit_CircuitPython_BLE_BerryMed_Pulse_Oximeter
