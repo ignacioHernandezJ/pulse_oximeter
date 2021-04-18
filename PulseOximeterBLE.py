@@ -16,6 +16,7 @@ import os
 import pandas as pd
 import time
 from datetime import datetime
+import threading
 
 class PulseOximeterBLE:
     """
@@ -31,6 +32,7 @@ class PulseOximeterBLE:
     def __init__(self, verbose=True):
         self.verbose = verbose
         self.connection = None
+        self.thread = None
 
     @property
     def connected(self):
@@ -132,8 +134,12 @@ class PulseOximeterBLE:
         timestamps = list()
         t0 = time.perf_counter()
 
+        # Hilo y Flag de control
+        self.thread = threading.currentThread()
+        self.thread.running = True
+
         # Lectura
-        while self.connection.connected:
+        while self.connection.connected and self.thread.running:
             read_data = service.values
 
             if read_data:
@@ -167,11 +173,11 @@ class PulseOximeterBLE:
         self.SpO2_series  = pd.Series(spo2_list,  index=timestamps)
         self.Pleth_series = pd.Series(pleth_list, index=timestamps)
 
-        print("=> Dispositivo desconectado")
+        if not self.connection.connected: print("=> Dispositivo desconectado")
 
-    # Método global para la lectura de datos
+    ## Método global para la lectura de datos
     # - duration: Tiempo en segundos hasta detener la lectura automáticamente
-    def read(self, duration=None):
+    def read(self, duration=None, threaded=False):
         """
         1- Lectura de datos del dispositivo
         2- Toma de datos del pulsioximetro
@@ -184,9 +190,18 @@ class PulseOximeterBLE:
 
             # 2- Extracción de datos continua
             try:
-                self.receive_data(duration=duration)
+                if threaded:
+                    self.thread = threading.Thread(target=self.receive_data, args=(duration,))
+                    self.thread.start()
+                else:
+                    self.receive_data(duration=duration)
             except self.connection_error:
                 connection = disconnect_pulse_oximeter()
+
+    # Detener lectura de datos
+    def stop_read(self):
+        if self.thread:
+            self.thread.running = False
 
     def save_csv(self, filename=None, folder='Records/', prefix=None):
         """Guardar las mediciones en un fichero csv o txt"""
