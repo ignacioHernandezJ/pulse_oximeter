@@ -43,8 +43,9 @@ class PulseOximeterBLE:
     def dataframe(self):
         """Recoger los datos obtenidos en pd.Series a un DataFrame"""
         df = pd.DataFrame()
-        df['BPM']  = self.BPM_series  if hasattr(self, "BPM_series")  else None
-        df['SpO2'] = self.SpO2_series if hasattr(self, "SpO2_series") else None
+        df['BPM']  = self.BPM_series   if hasattr(self, "BPM_series")   else None
+        df['SpO2'] = self.SpO2_series  if hasattr(self, "SpO2_series")  else None
+        df['Pleth']= self.Pleth_series if hasattr(self, "Pleth_series") else None
         return df
 
     # --- ESTABLECER LA CONEXIÓN --- #
@@ -124,6 +125,7 @@ class PulseOximeterBLE:
         # Series temporales
         pulse_list = list()
         spo2_list  = list()
+        pleth_list = list()
         full_record= list()
 
         if duration: print(f"Duración: {duration} segundos")
@@ -149,9 +151,10 @@ class PulseOximeterBLE:
 
                     if self.verbose: print(f"Pulso: {BPM}, SpO2: {SpO2} ({t} seg)")
 
-                    # Records
+                    # Almacenar valor adquirido
                     pulse_list.append(BPM)
                     spo2_list.append(SpO2)
+                    pleth_list.append(pleth)
                     full_record.append(read_data)
 
             t = time.perf_counter() - t0
@@ -161,9 +164,10 @@ class PulseOximeterBLE:
 
         print("\n--- Lectura finalizada ---")
 
-        # Almacenar datos obtenidos
-        self.BPM_series  = pd.Series(pulse_list, index=timestamps)
-        self.SpO2_series = pd.Series(spo2_list,  index=timestamps)
+        # Almacenar secuencia de datos obtenidos
+        self.BPM_series   = pd.Series(pulse_list, index=timestamps)
+        self.SpO2_series  = pd.Series(spo2_list,  index=timestamps)
+        self.Pleth_series = pd.Series(pleth_list, index=timestamps)
 
         print("=> Dispositivo desconectado")
 
@@ -200,8 +204,8 @@ class PulseOximeterBLE:
 
         # Ruta completa
         path = folder + filename
-
         assert not os.path.isfile(path), f"Ya existe el fichero {path}."
 
         # Guardado
         self.dataframe.to_csv(path, sep='\t')
+        print(f"Guardado en {path}")
