@@ -16,6 +16,7 @@ import os
 import pandas as pd
 import time
 from datetime import datetime
+import threading
 
 class PulseOximeterBLE:
     """
@@ -31,6 +32,7 @@ class PulseOximeterBLE:
     def __init__(self, verbose=True):
         self.verbose = verbose
         self.connection = None
+        self.thread = None
 
     @property
     def connected(self):
@@ -44,6 +46,15 @@ class PulseOximeterBLE:
         df['SpO2'] = self.SpO2_series  if hasattr(self, "SpO2_series")  else None
         df['Pleth']= self.Pleth_series if hasattr(self, "Pleth_series") else None
         return df
+
+    # Actualizar registro de las series temporales
+    # - data: lista o tupla. Contiene, en orden, BPM, SpO2, pleth
+    # - t: int/float. Indica el valor temporal de los datos
+    def update_record(self, data, t):
+        BPM, SpO2, pleth = data
+        self.BPM_series  = self.BPM_series.append(  pd.Series(BPM,  index=[t]) )
+        self.SpO2_series = self.SpO2_series.append( pd.Series(SpO2, index=[t]) )
+        self.Pleth_series= self.Pleth_series.append(pd.Series(pleth,index=[t]) )
 
     # --- ESTABLECER LA CONEXIÓN --- #
     def connect_pulse_oximeter(self, target="BerryMed", timeout=15):
@@ -120,9 +131,9 @@ class PulseOximeterBLE:
         service = self.connection[BerryMedPulseOximeterService]
 
         # Series temporales
-        pulse_list = list()
-        spo2_list  = list()
-        pleth_list = list()
+        self.BPM_series   = pd.Series()
+        self.SpO2_series  = pd.Series()
+        self.Pleth_series = pd.Series()
         full_record= list()
 
         if duration: print(f"Duración: {duration} segundos")
@@ -132,8 +143,12 @@ class PulseOximeterBLE:
         timestamps = list()
         t0 = time.perf_counter()
 
+        # Hilo y Flag de control
+        self.thread = threading.currentThread()
+        self.thread.running = True
+
         # Lectura
-        while self.connection.connected:
+        while self.connection.connected and self.thread.running:
             read_data = service.values
 
             if read_data:
@@ -149,12 +164,12 @@ class PulseOximeterBLE:
 
                     if self.verbose: print(f"Pulso: {BPM}, SpO2: {SpO2}, Pleth: {pleth} ({t} seg)")
 
-                    # Almacenar valor adquirido
-                    pulse_list.append(BPM)
-                    spo2_list.append(SpO2)
-                    pleth_list.append(pleth)
+                    # Almacenar valores adquiridos
+                    self.update_record((BPM, SpO2, pleth), t)
+
                     full_record.append(read_data)
 
+            # Limite de tiempo
             t = time.perf_counter() - t0
             if duration and t > duration:
                 print(f"\nTiempo límite alcanzado: {round(t,2)} (máx {duration} seg)")
@@ -162,16 +177,14 @@ class PulseOximeterBLE:
 
         print("\n--- Lectura finalizada ---")
 
-        # Almacenar secuencia de datos obtenidos
-        self.BPM_series   = pd.Series(pulse_list, index=timestamps)
-        self.SpO2_series  = pd.Series(spo2_list,  index=timestamps)
-        self.Pleth_series = pd.Series(pleth_list, index=timestamps)
+        self.full_record = full_record
+        self.timestamps = timestamps
 
-        print("=> Dispositivo desconectado")
+        if not self.connection.connected: print("=> Dispositivo desconectado")
 
-    # Método global para la lectura de datos
+    ## Método global para la lectura de datos
     # - duration: Tiempo en segundos hasta detener la lectura automáticamente
-    def read(self, duration=None):
+    def read(self, duration=None, threaded=False):
         """
         1- Lectura de datos del dispositivo
         2- Toma de datos del pulsioximetro
@@ -184,9 +197,18 @@ class PulseOximeterBLE:
 
             # 2- Extracción de datos continua
             try:
-                self.receive_data(duration=duration)
+                if threaded:
+                    self.thread = threading.Thread(target=self.receive_data, args=(duration,))
+                    self.thread.start()
+                else:
+                    self.receive_data(duration=duration)
             except self.connection_error:
                 connection = disconnect_pulse_oximeter()
+
+    # Detener lectura de datos
+    def stop_read(self):
+        if self.thread:
+            self.thread.running = False
 
     def save_csv(self, filename=None, folder='Records/', prefix=None):
         """Guardar las mediciones en un fichero csv o txt"""
