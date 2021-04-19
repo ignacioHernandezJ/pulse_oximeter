@@ -1,0 +1,28 @@
+Este enlace para las wheels que falten:
+https://www.lfd.uci.edu/~gohlke/pythonlibs/
+
+Instalar PySide2 con:
+# pip install PySide2
+
+Actualizar numpy, PIL
+# pip install -U numpy
+# pip install -U pillow
+
+Instalar cairo:
+# pip install pycairo
+
+Instalar WeasyPrint. https://weasyprint.readthedocs.io/en/stable/install.html#windows
+# python -m pip install --upgrade pip setuptools
+# python -m pip install WeasyPrint
+
+Instalar GTK+:
+https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer
+
+Probar WeasyPrint
+python -m weasyprint http://weasyprint.org weasyprint.pdf
+
+Instalar/Actualizar sqlite:
+conda install sqlite
+
+Instalar mkl-service:
+https://github.com/IntelPython/mkl-service
